@@ -305,17 +305,19 @@ class Trainer():
 
     end = time.time()
     # MODIFIED
-    for i, (in_vol, proj_labels, rgb_image, calib_path) in enumerate(train_loader):
+    for i, (in_vol, proj_labels, rgb_image, calib_matrix) in enumerate(train_loader):
       # measure data loading time
       data_time.update(time.time() - end)
-      if not self.multi_gpu and self.gpu:
-        in_vol = in_vol.cuda()
-        proj_mask = proj_mask.cuda()
+      
+      # MODIFIED
       if self.gpu:
+        in_vol = in_vol.cuda()
+        rgb_image = rgb_image.cuda()
+        calib_matrix = calib_matrix.cuda()
         proj_labels = proj_labels.cuda(non_blocking=True).long()
 
       # compute output
-      output = model(in_vol, rgb_image, calib_path)
+      output = model(in_vol, rgb_image, calib_matrix)
       loss = criterion(torch.log(output.clamp(min=1e-8)), proj_labels)
 
       # compute gradient and do SGD step
@@ -358,6 +360,7 @@ class Trainer():
 
       if show_scans:
         # get the first scan in batch and project points
+        raise "not supported!"
         mask_np = proj_mask[0].cpu().numpy()
         depth_np = in_vol[0][0].cpu().numpy()
         pred_np = argmax[0].cpu().numpy()
@@ -381,6 +384,9 @@ class Trainer():
 
       # step scheduler
       scheduler.step()
+      # DEBUG
+      if i == 10:
+        break
 
     return acc.avg, iou.avg, losses.avg, update_ratio_meter.avg
 
@@ -401,15 +407,16 @@ class Trainer():
 
     with torch.no_grad():
       end = time.time()
-      for i, (in_vol, proj_mask, proj_labels, _, path_seq, path_name, _, _, _, _, _, _, _, _, _) in enumerate(val_loader):
-        if not self.multi_gpu and self.gpu:
-          in_vol = in_vol.cuda()
-          proj_mask = proj_mask.cuda()
+      for i, (in_vol, proj_labels, rgb_image, calib_matrix) in enumerate(val_loader):
+        # MODIFIED
         if self.gpu:
+          in_vol = in_vol.cuda()
+          rgb_image = rgb_image.cuda()
+          calib_matrix = calib_matrix.cuda()
           proj_labels = proj_labels.cuda(non_blocking=True).long()
 
         # compute output
-        output = model(in_vol, proj_mask)
+        output = model(in_vol, rgb_image, calib_matrix)
         loss = criterion(torch.log(output.clamp(min=1e-8)), proj_labels)
 
         # measure accuracy and record loss
@@ -419,6 +426,7 @@ class Trainer():
 
         if save_scans:
           # get the first scan in batch and project points
+          raise "Not supported!"
           mask_np = proj_mask[0].cpu().numpy()
           depth_np = in_vol[0][0].cpu().numpy()
           pred_np = argmax[0].cpu().numpy()
@@ -433,6 +441,10 @@ class Trainer():
         # measure elapsed time
         batch_time.update(time.time() - end)
         end = time.time()
+        
+        # DEBUG
+        if i == 10:
+          break
 
       accuracy = evaluator.getacc()
       jaccard, class_jaccard = evaluator.getIoU()
@@ -450,5 +462,5 @@ class Trainer():
       for i, jacc in enumerate(class_jaccard):
         print('IoU class {i:} [{class_str:}] = {jacc:.3f}'.format(
             i=i, class_str=class_func(i), jacc=jacc))
-
+        
     return acc.avg, iou.avg, losses.avg, rand_imgs

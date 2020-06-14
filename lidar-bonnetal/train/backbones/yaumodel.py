@@ -1,9 +1,10 @@
 # Encoder
 from __future__ import print_function
+import math
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
+from torch.nn.modules.utils import _pair, _quadruple
 
 class Fire(nn.Module):
   """
@@ -22,7 +23,51 @@ class Fire(nn.Module):
   def forward(self, x):
     x = self.activation(self.squeeze(x))
     return torch.cat([self.activation(self.expand1x1(x)), self.activation(self.expand3x3(x))], 1)
-    
+
+class MedianPool2d(nn.Module):
+  """ Median pool (usable as median filter when stride=1) module.
+  reference: https://gist.github.com/rwightman/f2d3849281624be7c0f11c85c87c1598
+  Args:
+    kernel_size: size of pooling kernel, int or 2-tuple
+    stride: pool stride, int or 2-tuple
+    padding: pool padding, int or 4-tuple (l, r, t, b) as in pytorch F.pad
+    same: override padding and enforce same padding, boolean
+  """
+  def __init__(self, kernel_size=3, stride=1, padding=0, same=True):
+    super(MedianPool2d, self).__init__()
+    self.k = _pair(kernel_size)
+    self.stride = _pair(stride)
+    self.padding = _quadruple(padding)  # convert to l, r, t, b
+    self.same = same
+
+  def _padding(self, x):
+    if self.same:
+      ih, iw = x.size()[2:]
+      if ih % self.stride[0] == 0:
+        ph = max(self.k[0] - self.stride[0], 0)
+      else:
+        ph = max(self.k[0] - (ih % self.stride[0]), 0)
+      if iw % self.stride[1] == 0:
+        pw = max(self.k[1] - self.stride[1], 0)
+      else:
+        pw = max(self.k[1] - (iw % self.stride[1]), 0)
+      pl = pw // 2
+      pr = pw - pl
+      pt = ph // 2
+      pb = ph - pt
+      padding = (pl, pr, pt, pb)
+    else:
+      padding = self.padding
+    return padding
+
+  def forward(self, x):
+    # using existing pytorch functions and tensor ops so that we get autograd, 
+    # would likely be more efficient to implement from scratch at C/Cuda level
+    x = F.pad(x, self._padding(x), mode='reflect')
+    x = x.unfold(2, self.k[0], self.stride[0]).unfold(3, self.k[1], self.stride[1])
+    x = x.contiguous().view(x.size()[:4] + (-1,)).median(dim=-1)[0]
+    return x
+  
 # ******************************************************************************
 
 class Backbone(nn.Module):
@@ -40,7 +85,7 @@ class Backbone(nn.Module):
     self.use_remission = params["input_depth"]["remission"]
     self.drop_prob = params["dropout"]
     self.OS = params["OS"]
-    self.mobilenet = torch.hub.load('pytorch/vision:v0.6.0', 'mobilenet_v2', pretrained=True)
+    self.mobilenet = torch.hub.load('pytorch/vision:v0.6.0', 'mobilenet_v2', pretrained=True).cuda()
     self.mobilenet.eval()
 
     # input depth calc
@@ -99,6 +144,7 @@ class Backbone(nn.Module):
     self.fire7 = Fire(384 + 1280, 48, 192, 192) # fuse 19th
     self.fire8 = Fire(384, 64, 256, 256)
     self.fire9 = Fire(512, 64, 256, 256)
+    self.medpool = MedianPool2d()
 
     # output
     self.dropout = nn.Dropout2d(self.drop_prob)
@@ -125,7 +171,7 @@ class Backbone(nn.Module):
       elif i == 18:
         rgb_features['19th'] = x.clone().detach()
     return rgb_features
-
+  
   def fill_missing_points(self, tensor, mask, kernelSize=3):
     """
     Fill missing points in `tensor` indicated by `mask`
@@ -135,7 +181,7 @@ class Backbone(nn.Module):
     Returns:
         combined: filled tensor
     """
-    # TODO: deal with outliers using high pass filters: https://www.tutorialspoint.com/dip/high_pass_vs_low_pass_filters.htm
+    # TODO: deal with outliers using low pass filters: https://www.tutorialspoint.com/dip/high_pass_vs_low_pass_filters.htm
     eps = 1e-6
     k = kernelSize
     H, W = tensor.shape[0], tensor.shape[1]
@@ -143,13 +189,7 @@ class Backbone(nn.Module):
     tensor = tensor * mask # clear the tensor
 
     # apply median filter
-    median = torch.zeros_like(tensor)
-    for i in range(H):
-      for j in range(W):
-        window = tensor[max(0, i-k):min(H, i+k), max(0, j-k):min(W, j+k)]
-        mask_w = mask[max(0, i-k):min(H, i+k), max(0, j-k):min(W, j+k)]
-        if torch.sum(mask_w) > 0:
-          median[i, j] = torch.median(window[mask_w])
+    median = self.medpool(tensor)
     median = tensor + median * torch.logical_not(mask)
 
     # fill the top and bottom part
@@ -165,7 +205,7 @@ class Backbone(nn.Module):
     combined = tensor + median * torch.logical_not(mask)
     return combined
   
-  def get_rgb_feature(self, range_img, rgb_features, calib_path):
+  def get_rgb_feature(self, range_img, rgb_features, calib_matrix):
     """get ready-to-fuse rgb features
     Note: Now only support batch size == 1!
     Args:
@@ -190,21 +230,11 @@ class Backbone(nn.Module):
         li.append(self.fill_missing_points(a[i].clone(), mask)) # with missing points now
       xyz[name] = torch.stack(li, dim=0).reshape(3, -1) # flatten
 
-    # read calib file
-    calib = {}
-    with open(calib_path, 'r') as file:
-      for line in file.readlines():
-        key, value = line.split(":", 1)
-        value = torch.tensor([float(i) for i in value.split()], dtype=torch.float, device=device).reshape(3, 4)
-        calib[key] = value
-    Tr = torch.cat((calib['Tr'], torch.tensor([[0., 0., 0., 1.]], device=device)))
-    P2 = calib['P2']
-
     # lidar_points -> RGB
     rgb_idx = {}
     for layer in names:
       # corresponding row and column on RGB
-      rgb_idx[layer] = torch.mm(torch.mm(P2, Tr), torch.cat((xyz[layer], torch.ones((1, xyz[layer].shape[1]), device=device))))
+      rgb_idx[layer] = torch.mm(calib_matrix, torch.cat((xyz[layer], torch.ones((1, xyz[layer].shape[1]), device=device))))
       rgb_idx[layer][:2, :] /= rgb_idx[layer][2, :] # normalize
       rgb_idx[layer] = rgb_idx[layer][:2, :] # discard useless channel
       rgb_idx[layer] = rgb_idx[layer].reshape(2, range_img.shape[1], range_img.shape[2] // strides[layer]) # reshape to the same size as range feature
@@ -234,12 +264,12 @@ class Backbone(nn.Module):
 
     return corresponding_features
     
-  def forward(self, x, rgb_image, calib_path):
+  def forward(self, x, rgb_image, calib_matrix):
     # fuse preparation
     rgb_features = self.run_mobilenet(rgb_image)
-    assert len(calib_path) == 1, "now only support batch size == 1"
-    calib_path = calib_path[0] # only support batch size == 1
-    features = self.get_rgb_feature(x, rgb_features, calib_path) # features ready to concat
+    assert len(calib_matrix) == 1, "now only support batch size == 1"
+    calib_matrix = calib_matrix[0] # only support batch size == 1
+    features = self.get_rgb_feature(x, rgb_features, calib_matrix) # features ready to concat
 
     # filter input
     x = x[:, self.input_idxs]

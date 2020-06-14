@@ -1,0 +1,120 @@
+`bottleneck` is a tool that can be used as an initial step for debugging
+bottlenecks in your program.
+
+It summarizes runs of your script with the Python profiler and PyTorch's
+autograd profiler. Because your script will be profiled, please ensure that it
+exits in a finite amount of time.
+
+For more complicated uses of the profilers, please see
+https://docs.python.org/3/library/profile.html and
+https://pytorch.org/docs/master/autograd.html#profiler for more information.
+Running environment analysis...
+Running your script with cProfile
+----------
+INTERFACE:
+dataset /DATACENTER2/yau-project/dataset/
+arch_cfg /DATACENTER2/yau-project/yaumodel/arch_cfg.yaml
+data_cfg /DATACENTER2/yau-project/yaumodel/data_cfg.yaml
+log /DATACENTER2/yau-project/log
+pretrained None
+----------
+
+Commit hash (training version):  b'2800d06'
+----------
+
+Opening arch config file /DATACENTER2/yau-project/yaumodel/arch_cfg.yaml
+Opening data config file /DATACENTER2/yau-project/yaumodel/data_cfg.yaml
+No pretrained directory found.
+Copying files to /DATACENTER2/yau-project/log for further reference.
+Sequences folder exists! Using sequences from /DATACENTER2/yau-project/dataset/sequences
+parsing seq 00
+Using 4541 scans from sequences [0]
+Sequences folder exists! Using sequences from /DATACENTER2/yau-project/dataset/sequences
+parsing seq 00
+Using 4541 scans from sequences [0]
+Loss weights from content:  tensor([  0.0000,  22.9317, 857.5627, 715.1100, 315.9618, 356.2452, 747.6170,
+        887.2239, 963.8915,   5.0051,  63.6247,   6.9002, 203.8796,   7.4802,
+         13.6315,   3.7339, 142.1462,  12.6355, 259.3699, 618.9667])
+Using SqueezeNet Backbone
+Depth of backbone input =  6
+Original OS:  16
+New OS:  16
+Strides:  [2, 2, 2, 2]
+Decoder original OS:  16
+Decoder new OS:  16
+Decoder strides:  [2, 2, 2, 2]
+Total number of parameters:  4486076
+Total number of parameters requires_grad:  4486076
+Param encoder  4294568
+Param decoder  179968
+Param head  11540
+No path to pretrained, using random init.
+Training in device:  cuda
+Let's use 4 GPUs!
+Ignoring class  0  in IoU evaluation
+[IOU EVAL] IGNORE:  tensor([0])
+[IOU EVAL] INCLUDE:  tensor([ 1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16, 17, 18,
+        19])
+Using cache found in /home/zhiqi.cheng/.cache/torch/hub/pytorch_vision_v0.6.0
+/DATACENTER1/yau-project/anaconda3/envs/yau-model/lib/python3.8/site-packages/torch/optim/lr_scheduler.py:118: UserWarning: Detected call of `lr_scheduler.step()` before `optimizer.step()`. In PyTorch 1.1.0 and later, you should call them in the opposite order: `optimizer.step()` before `lr_scheduler.step()`.  Failure to do this will result in PyTorch skipping the first value of the learning rate schedule. See more details at https://pytorch.org/docs/stable/optim.html#how-to-adjust-learning-rate
+  warnings.warn("Detected call of `lr_scheduler.step()` before `optimizer.step()`. "
+`bottleneck` is a tool that can be used as an initial step for debugging
+bottlenecks in your program.
+
+It summarizes runs of your script with the Python profiler and PyTorch's
+autograd profiler. Because your script will be profiled, please ensure that it
+exits in a finite amount of time.
+
+For more complicated uses of the profilers, please see
+https://docs.python.org/3/library/profile.html and
+https://pytorch.org/docs/master/autograd.html#profiler for more information.
+Running environment analysis...
+Running your script with cProfile
+----------
+INTERFACE:
+dataset /DATACENTER2/yau-project/dataset/
+arch_cfg /DATACENTER2/yau-project/yaumodel/arch_cfg.yaml
+data_cfg /DATACENTER2/yau-project/yaumodel/data_cfg.yaml
+log /DATACENTER2/yau-project/log
+pretrained None
+----------
+
+Commit hash (training version):  b'2800d06'
+----------
+
+Opening arch config file /DATACENTER2/yau-project/yaumodel/arch_cfg.yaml
+Opening data config file /DATACENTER2/yau-project/yaumodel/data_cfg.yaml
+No pretrained directory found.
+Copying files to /DATACENTER2/yau-project/log for further reference.
+Sequences folder exists! Using sequences from /DATACENTER2/yau-project/dataset/sequences
+parsing seq 00
+Using 4541 scans from sequences [0]
+Sequences folder exists! Using sequences from /DATACENTER2/yau-project/dataset/sequences
+parsing seq 00
+Using 4541 scans from sequences [0]
+Loss weights from content:  tensor([  0.0000,  22.9317, 857.5627, 715.1100, 315.9618, 356.2452, 747.6170,
+        887.2239, 963.8915,   5.0051,  63.6247,   6.9002, 203.8796,   7.4802,
+         13.6315,   3.7339, 142.1462,  12.6355, 259.3699, 618.9667])
+Using SqueezeNet Backbone
+Depth of backbone input =  6
+Original OS:  16
+New OS:  16
+Strides:  [2, 2, 2, 2]
+Decoder original OS:  16
+Decoder new OS:  16
+Decoder strides:  [2, 2, 2, 2]
+Total number of parameters:  4486076
+Total number of parameters requires_grad:  4486076
+Param encoder  4294568
+Param decoder  179968
+Param head  11540
+No path to pretrained, using random init.
+Training in device:  cuda
+Let's use 4 GPUs!
+Ignoring class  0  in IoU evaluation
+[IOU EVAL] IGNORE:  tensor([0])
+[IOU EVAL] INCLUDE:  tensor([ 1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16, 17, 18,
+        19])
+Using cache found in /home/zhiqi.cheng/.cache/torch/hub/pytorch_vision_v0.6.0
+/DATACENTER1/yau-project/anaconda3/envs/yau-model/lib/python3.8/site-packages/torch/optim/lr_scheduler.py:118: UserWarning: Detected call of `lr_scheduler.step()` before `optimizer.step()`. In PyTorch 1.1.0 and later, you should call them in the opposite order: `optimizer.step()` before `lr_scheduler.step()`.  Failure to do this will result in PyTorch skipping the first value of the learning rate schedule. See more details at https://pytorch.org/docs/stable/optim.html#how-to-adjust-learning-rate
+  warnings.warn("Detected call of `lr_scheduler.step()` before `optimizer.step()`. "
