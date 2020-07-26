@@ -384,9 +384,6 @@ class Trainer():
 
       # step scheduler
       scheduler.step()
-      # DEBUG
-      if i == 10:
-        break
 
     return acc.avg, iou.avg, losses.avg, update_ratio_meter.avg
 
@@ -441,10 +438,6 @@ class Trainer():
         # measure elapsed time
         batch_time.update(time.time() - end)
         end = time.time()
-        
-        # DEBUG
-        if i == 10:
-          break
 
       accuracy = evaluator.getacc()
       jaccard, class_jaccard = evaluator.getIoU()

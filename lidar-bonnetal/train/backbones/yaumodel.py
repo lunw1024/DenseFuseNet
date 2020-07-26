@@ -144,7 +144,10 @@ class Backbone(nn.Module):
     self.fire7 = Fire(384 + 1280, 48, 192, 192) # fuse 19th
     self.fire8 = Fire(384, 64, 256, 256)
     self.fire9 = Fire(512, 64, 256, 256)
-    self.medpool = MedianPool2d()
+    self.medpool3 = MedianPool2d()
+    self.medpool5 = MedianPool2d(kernel_size=5)
+    self.medpool7 = MedianPool2d(kernel_size=7)
+    self.medpool13 = MedianPool2d(kernel_size=13)
 
     # output
     self.dropout = nn.Dropout2d(self.drop_prob)
@@ -172,38 +175,39 @@ class Backbone(nn.Module):
         rgb_features['19th'] = x.clone().detach()
     return rgb_features
   
-  def fill_missing_points(self, tensor, mask, kernelSize=3):
+  def fill_missing_points(self, tensor, mask):
     """
     Fill missing points in `tensor` indicated by `mask`
     Args:
         tensor: any H * W tensor
-        mask: boolean mask where True indicates keep original value
+        mask: boolean mask where `False` indicates missing points
     Returns:
-        combined: filled tensor
+        median: filled tensor
     """
     # TODO: deal with outliers using low pass filters: https://www.tutorialspoint.com/dip/high_pass_vs_low_pass_filters.htm
     eps = 1e-6
-    k = kernelSize
     H, W = tensor.shape[0], tensor.shape[1]
+    assert H % 2 == 0
     device = tensor.device
     tensor = tensor * mask # clear the tensor
 
-    # apply median filter
-    median = self.medpool(tensor)
-    median = tensor + median * torch.logical_not(mask)
+    # repeatedly apply median filter
+    median = tensor.clone()
+    medpools = [self.medpool3, self.medpool5, self.medpool7, self.medpool13]
+    for medpool in medpools:
+      median = median + medpool(median.unsqueeze(0).unsqueeze(0)).squeeze() * torch.logical_not(mask)
+      mask = median > eps
 
     # fill the top and bottom part
     # upperhalf: maximum
-    still_missing_mask_top = torch.logical_and(median < eps, torch.cat((torch.full((H//2, W), True, dtype=torch.bool, device=device), torch.full((H//2, W), False, dtype=torch.bool, device=device))))
-    maximum = torch.max(median.masked_select(torch.logical_not(still_missing_mask_top)))
-    median.masked_fill_(still_missing_mask_top, maximum)
+    mask_top = torch.cat([mask[:H//2], torch.full((H//2, W), True, dtype=bool, device=device)])
+    maximum = torch.max(median.masked_select(mask_top))
+    median.masked_fill_(torch.logical_not(mask_top), maximum)
     # lowerhalf: minimum
-    still_missing_mask_bottom = torch.logical_and(median < eps, torch.cat((torch.full((H//2, W), False, dtype=torch.bool, device=device), torch.full((H//2, W), True, dtype=torch.bool, device=device))))
-    minimum = torch.min(median.masked_select(torch.logical_not(still_missing_mask_bottom)))
-    median.masked_fill_(still_missing_mask_bottom, minimum)
-
-    combined = tensor + median * torch.logical_not(mask)
-    return combined
+    mask_bottom = torch.cat([torch.full((H//2, W), True, dtype=bool, device=device), mask[H//2:]])
+    minimum = torch.min(median.masked_select(mask_bottom))
+    median.masked_fill_(torch.logical_not(mask_bottom), minimum)
+    return median
   
   def get_rgb_feature(self, range_img, rgb_features, calib_matrix):
     """get ready-to-fuse rgb features
