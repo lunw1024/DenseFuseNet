@@ -383,7 +383,7 @@ class Trainer():
                   umean=update_mean, ustd=update_std))
 
       # step scheduler
-      scheduler.step()
+      scheduler.step(losses.avg)
 
     return acc.avg, iou.avg, losses.avg, update_ratio_meter.avg
 
