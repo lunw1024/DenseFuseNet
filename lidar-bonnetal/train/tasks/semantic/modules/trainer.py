@@ -87,6 +87,7 @@ class Trainer():
       self.model = Segmentator(self.ARCH,
                                self.parser.get_n_classes(),
                                self.path)
+      print(self.model)
 
     # GPU?
     self.gpu = False
@@ -153,6 +154,12 @@ class Trainer():
                               warmup_steps=up_steps,
                               momentum=self.ARCH["train"]["momentum"],
                               decay=final_decay)
+#     self.scheduler = optim.lr_scheduler.CyclicLR(self.optimizer, 
+#                                                  base_lr=1e-7,
+#                                                  max_lr=self.ARCH['train']['lr'],
+#                                                  step_size_up=up_steps,
+#                                                  mode='exp_range',
+#                                                  gamma=0.99997)
 
   @staticmethod
   def get_mpl_colormap(cmap_name):
@@ -383,7 +390,8 @@ class Trainer():
                   umean=update_mean, ustd=update_std))
 
       # step scheduler
-      scheduler.step(losses.avg)
+#       scheduler.step(losses.avg)
+      scheduler.step()
 
     return acc.avg, iou.avg, losses.avg, update_ratio_meter.avg
 
@@ -416,16 +424,15 @@ class Trainer():
         output = model(in_vol, rgb_image, calib_matrix)
         loss = criterion(torch.log(output.clamp(min=1e-8)), proj_labels)
 
-        # measure accuracy and record loss
+        # measure accuracy and record loss, log sample predictions
         argmax = output.argmax(dim=1)
         evaluator.addBatch(argmax, proj_labels)
         losses.update(loss.mean().item(), in_vol.size(0))
 
         if save_scans:
           # get the first scan in batch and project points
-          raise "Not supported!"
-          mask_np = proj_mask[0].cpu().numpy()
           depth_np = in_vol[0][0].cpu().numpy()
+          mask_np = in_vol[0][5].cpu().numpy()
           pred_np = argmax[0].cpu().numpy()
           gt_np = proj_labels[0].cpu().numpy()
           out = Trainer.make_log_img(depth_np,

@@ -78,7 +78,7 @@ class Backbone(nn.Module):
   def __init__(self, params):
     # Call the super constructor
     super(Backbone, self).__init__()
-    print("Using SqueezeNet Backbone")
+    print("Using Yau Backbone")
 
     self.use_range = params["input_depth"]["range"]
     self.use_xyz = params["input_depth"]["xyz"]
@@ -148,6 +148,7 @@ class Backbone(nn.Module):
     self.medpool5 = MedianPool2d(kernel_size=5)
     self.medpool7 = MedianPool2d(kernel_size=7)
     self.medpool13 = MedianPool2d(kernel_size=13)
+    self.medpool29 = MedianPool2d(kernel_size=29)
 
     # output
     self.dropout = nn.Dropout2d(self.drop_prob)
@@ -175,6 +176,40 @@ class Backbone(nn.Module):
         rgb_features['19th'] = x.clone().detach()
     return rgb_features
   
+#   def fill_missing_points(self, tensor, mask):
+#     """
+#     Fill missing points in `tensor` indicated by `mask`
+#     Args:
+#         tensor: any H * W tensor
+#         mask: boolean mask where `False` indicates missing points
+#     Returns:
+#         median: filled tensor
+#     """
+#     # TODO: deal with outliers using low pass filters: https://www.tutorialspoint.com/dip/high_pass_vs_low_pass_filters.htm
+#     eps = 1e-6
+#     H, W = tensor.shape[0], tensor.shape[1]
+#     assert H % 2 == 0
+#     device = tensor.device
+#     tensor = tensor * mask # clear the tensor
+
+#     # repeatedly apply median filter
+#     median = tensor.clone()
+#     medpools = [self.medpool3, self.medpool5, self.medpool7, self.medpool13]
+#     for medpool in medpools:
+#       median = median + medpool(median.unsqueeze(0).unsqueeze(0)).squeeze() * torch.logical_not(mask)
+#       mask = median > eps
+
+#     # fill the top and bottom part
+#     # upperhalf: maximum
+#     mask_top = torch.cat([mask[:H//2], torch.full((H//2, W), True, dtype=bool, device=device)])
+#     maximum = torch.max(median.masked_select(mask_top))
+#     median.masked_fill_(torch.logical_not(mask_top), maximum)
+#     # lowerhalf: minimum
+#     mask_bottom = torch.cat([torch.full((H//2, W), True, dtype=bool, device=device), mask[H//2:]])
+#     minimum = torch.min(median.masked_select(mask_bottom))
+#     median.masked_fill_(torch.logical_not(mask_bottom), minimum)
+#     return median
+  
   def fill_missing_points(self, tensor, mask):
     """
     Fill missing points in `tensor` indicated by `mask`
@@ -190,30 +225,20 @@ class Backbone(nn.Module):
     assert H % 2 == 0
     device = tensor.device
     tensor = tensor * mask # clear the tensor
-
+    
     # repeatedly apply median filter
     median = tensor.clone()
-    medpools = [self.medpool3, self.medpool5, self.medpool7, self.medpool13]
+    medpools = [self.medpool3, self.medpool5, self.medpool7, self.medpool13, self.medpool29]
     for medpool in medpools:
-      median = median + medpool(median.unsqueeze(0).unsqueeze(0)).squeeze() * torch.logical_not(mask)
-      mask = median > eps
-
-    # fill the top and bottom part
-    # upperhalf: maximum
-    mask_top = torch.cat([mask[:H//2], torch.full((H//2, W), True, dtype=bool, device=device)])
-    maximum = torch.max(median.masked_select(mask_top))
-    median.masked_fill_(torch.logical_not(mask_top), maximum)
-    # lowerhalf: minimum
-    mask_bottom = torch.cat([torch.full((H//2, W), True, dtype=bool, device=device), mask[H//2:]])
-    minimum = torch.min(median.masked_select(mask_bottom))
-    median.masked_fill_(torch.logical_not(mask_bottom), minimum)
+        median = median + medpool(median.unsqueeze(0).unsqueeze(0)).squeeze() * torch.logical_not(mask)
+        mask = median.abs() > eps
     return median
   
   def get_rgb_feature(self, range_img, rgb_features, calib_matrix):
     """get ready-to-fuse rgb features
     Note: Now only support batch size == 1!
     Args:
-    range_img: batchsize=1 * ch * H * W tensor, channel = [range, x, y, z, remission, proj_mask]
+    range_img: batchsize=1 * ch * H * W tensor, channel = [r, x, y, z, remission, proj_mask]
     rgb_features: dict[rgb_layer_name] of rgb features, which are ch * H * W tensors
     Returns:
     corresponding_features: dict[sqseg_layer_name] of processed features

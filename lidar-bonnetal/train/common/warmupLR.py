@@ -32,23 +32,23 @@ class warmupLR(toptim._LRScheduler):
                                              base_momentum=self.momentum,
                                              max_momentum=self.momentum)
 
-    # reduce on plaetau
-    self.final_scheduler = toptim.ReduceLROnPlateau(self.optimizer, factor=0.9, mode='min', patience=self.warmup_steps / 5)
+    # second optimizer
+#     self.final_scheduler = toptim.ReduceLROnPlateau(self.optimizer, factor=0.9, mode='min', patience=self.warmup_steps / 5)
+#     self.final_scheduler = toptim.ExponentialLR(self.optimizer, gamma=0.99997)
     
     # our params
-    self.last_epoch = -1  # fix for pytorch 1.1 and below
+#     self.last_epoch = -1  # fix for pytorch 1.1 and below
     self.finished = False  # am i done
     super().__init__(optimizer)
 
   def get_lr(self):
     return [self.lr * (self.decay ** self.last_epoch) for lr in self.base_lrs]
 
-  def step(self, metric=1e9):
+  def step(self, epoch=None):
     if self.finished or self.initial_scheduler.last_epoch >= self.warmup_steps:
-      if self.finished:
-        return self.final_scheduler.step(metric)
-      else:
-        self.finished = True;
-        return self.final_scheduler.step(metric)
+      if not self.finished:
+        self.base_lrs = [self.lr for lr in self.base_lrs]
+        self.finished = True
+      return super(warmupLR, self).step(epoch)
     else:
-      return self.initial_scheduler.step()
+      return self.initial_scheduler.step(epoch)

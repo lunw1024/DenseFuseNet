@@ -49,10 +49,7 @@ class Segmentator(nn.Module):
                                         self.nclasses, kernel_size=3,
                                         stride=1, padding=1))
 
-    if self.ARCH["post"]["CRF"]["use"]:
-      self.CRF = CRF(self.ARCH["post"]["CRF"]["params"], self.nclasses)
-    else:
-      self.CRF = None
+    self.CRF = None
 
     # train backbone?
     if not self.ARCH["backbone"]["train"]:
@@ -71,6 +68,7 @@ class Segmentator(nn.Module):
 
     # train CRF?
     if self.CRF and not self.ARCH["post"]["CRF"]["train"]:
+      raise
       for w in self.CRF.parameters():
         w.requires_grad = False
 
@@ -89,6 +87,7 @@ class Segmentator(nn.Module):
     print("Param decoder ", weights_dec)
     print("Param head ", weights_head)
     if self.CRF:
+      raise
       weights_crf = sum(p.numel() for p in self.CRF.parameters())
       print("Param CRF ", weights_crf)
 
@@ -153,9 +152,9 @@ class Segmentator(nn.Module):
     y = self.head(y)
     y = F.softmax(y, dim=1)
     if self.CRF:
-      print("CRF not supported in yaumodel")
-      assert(mask is not None)
-      y = self.CRF(x, y, mask)
+      print("CRF not supported")
+      raise
+
     return y
 
   def save_checkpoint(self, logdir, suffix=""):

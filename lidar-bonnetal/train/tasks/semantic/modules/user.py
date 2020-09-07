@@ -99,27 +99,17 @@ class User():
     with torch.no_grad():
       end = time.time()
 
-      for i, (proj_in, proj_mask, _, _, path_seq, path_name, p_x, p_y, proj_range, unproj_range, _, _, _, _, npoints) in enumerate(loader):
-        # first cut to rela size (batch size one allows it)
-        p_x = p_x[0, :npoints]
-        p_y = p_y[0, :npoints]
-        proj_range = proj_range[0, :npoints]
-        unproj_range = unproj_range[0, :npoints]
-        path_seq = path_seq[0]
-        path_name = path_name[0]
+      for i, (in_vol, proj_labels, rgb_image, calib_matrix) in enumerate(loader): # MODIFIED
 
         if self.gpu:
-          proj_in = proj_in.cuda()
-          proj_mask = proj_mask.cuda()
-          p_x = p_x.cuda()
-          p_y = p_y.cuda()
-          if self.post:
-            proj_range = proj_range.cuda()
-            unproj_range = unproj_range.cuda()
+          in_vol = in_vol.cuda()
+          rgb_image = rgb_image.cuda()
+          calib_matrix = calib_matrix.cuda()
+          proj_labels = proj_labels.cuda(non_blocking=True).long()
 
         # compute output
-        proj_output = self.model(proj_in, proj_mask)
-        proj_argmax = proj_output[0].argmax(dim=0)
+        output = self.model(in_vol, rgb_image, calib_matrix)
+        proj_argmax = output[0].argmax(dim=0)
 
         if self.post:
           # knn postproc
