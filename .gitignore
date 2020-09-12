@@ -1,5 +1,7 @@
 dataset/
 .ipynb_checkpoints
 log*/
-__pycache__/
-
+final/
+final1/
+**/__pycache__/
+**/predictions/
