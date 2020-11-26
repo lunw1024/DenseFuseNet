@@ -7,5 +7,5 @@ torch
 vispy
 opencv_python==4.1.0.25
 opencv_contrib_python==4.1.0.25
-Pillow==6.1.0
+Pillow==7.1.0
 PyYAML==5.1.1
