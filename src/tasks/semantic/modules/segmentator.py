@@ -145,9 +145,9 @@ class Segmentator(nn.Module):
     else:
       print("No path to pretrained, using random init.")
 
-  def forward(self, x, rgb_image, calib_path):
+  def forward(self, x, rgb_image, calib_matrix):
     # MODIFIED
-    y, skips = self.backbone(x, rgb_image, calib_path)
+    y, skips = self.backbone(x, rgb_image, calib_matrix)
     y = self.decoder(y, skips)
     y = self.head(y)
     y = F.softmax(y, dim=1)

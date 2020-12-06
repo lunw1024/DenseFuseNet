@@ -74,15 +74,15 @@ class User():
 
   def infer(self):
     # do train set
-    self.infer_subset(loader=self.parser.get_train_set(),
-                      to_orig_fn=self.parser.to_original)
+#     self.infer_subset(loader=self.parser.get_train_set(),
+#                       to_orig_fn=self.parser.to_original)
 
     # do valid set
     self.infer_subset(loader=self.parser.get_valid_set(),
                       to_orig_fn=self.parser.to_original)
     # do test set
-    self.infer_subset(loader=self.parser.get_test_set(),
-                      to_orig_fn=self.parser.to_original)
+#     self.infer_subset(loader=self.parser.get_test_set(),
+#                       to_orig_fn=self.parser.to_original)
 
     print('Finished Infering')
 
@@ -99,8 +99,16 @@ class User():
     with torch.no_grad():
       end = time.time()
 
-      for i, (in_vol, proj_labels, rgb_image, calib_matrix) in enumerate(loader): # MODIFIED
+      for i, (in_vol, proj_labels, rgb_image, calib_matrix, path_seq, path_name, proj_mask, p_x, p_y, proj_range, unproj_range, npoints) in enumerate(loader): # MODIFIED
 
+        # first cut to rela size (batch size one allows it)
+        p_x = p_x[0, :npoints]
+        p_y = p_y[0, :npoints]
+        proj_range = proj_range[0, :npoints]
+        unproj_range = unproj_range[0, :npoints]
+        path_seq = path_seq[0]
+        path_name = path_name[0]
+        
         if self.gpu:
           in_vol = in_vol.cuda()
           rgb_image = rgb_image.cuda()
@@ -134,6 +142,7 @@ class User():
         # get the first scan in batch and project scan
         pred_np = unproj_argmax.cpu().numpy()
         pred_np = pred_np.reshape((-1)).astype(np.int32)
+        pred_np = pred_np.clip(0, 118)
 
         # map to original label
         pred_np = to_orig_fn(pred_np)
