@@ -3,6 +3,7 @@
 [Paper Accepted to ICCECE 2021](https://github.com/IDl0T/DenseFuseNet/blob/master/Notification%20of%20Paper%20Acceptance.pdf)
 
 # [DenseFuseNet: Improve 3D Semantic Segmentation in the Context of Autonomous Driving with Dense Correspondence](https://github.com/IDl0T/DenseFuseNet/blob/master/DenseFuseNet.pdf)
+*Yulun Wu*
 ## Abstract
 With the development of deep convolutional networks, autonomous driving has been reforming human social activities in the recent decade. The core issue of autonomous driving is how to integrate the multi-modal perception system effectively, that is, using sensors such as lidar, RGB camera, and radar to identify general objects in traffic scenes. Extensive investigation shows that lidar and cameras are the two most powerful sensors widely used by autonomous driving companies such as Tesla and Waymo, which indeed revealed that how to integrate them effectively is bound to be one of the core issues in the field of autonomous driving in the future. Obviously, these two kinds of sensors have their inherent advantages and disadvantages. Based on the previous research works, we are motivated to fuse lidars and RGB cameras together to build a more robust perception system.
 
