@@ -1,6 +1,6 @@
 <img src="https://github.com/IDl0T/DenseFuseNet/blob/master/Yau-Photo.jpg" width = "300"/> <img src="https://github.com/IDl0T/DenseFuseNet/blob/master/Yau-Award.jpg" width = "300"/> <img src="https://github.com/IDl0T/DenseFuseNet/blob/master/Yau-Trophy.jpg" width = "300"/>
 
-[Paper Accepted to ICCECE 2021](https://github.com/IDl0T/DenseFuseNet/blob/master/Notification%20of%20Paper%20Acceptance.pdf)
+[Paper published at ICCECE 2021](https://ieeexplore.ieee.org/document/9342077)
 
 # [DenseFuseNet: Improve 3D Semantic Segmentation in the Context of Autonomous Driving with Dense Correspondence](https://github.com/IDl0T/DenseFuseNet/blob/master/DenseFuseNet.pdf)
 *Yulun Wu*
