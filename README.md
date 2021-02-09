@@ -1,6 +1,6 @@
 <img src="https://github.com/IDl0T/DenseFuseNet/blob/master/Yau-Photo.jpg" width = "300"/> <img src="https://github.com/IDl0T/DenseFuseNet/blob/master/Yau-Award.jpg" width = "300"/> <img src="https://github.com/IDl0T/DenseFuseNet/blob/master/Yau-Trophy.jpg" width = "300"/>
 
-[Cite this](https://ieeexplore.ieee.org/document/9342077)
+[Paper published at ICCECE 2021](https://ieeexplore.ieee.org/document/9342077)
 
 # [DenseFuseNet: Improve 3D Semantic Segmentation in the Context of Autonomous Driving with Dense Correspondence](https://github.com/IDl0T/DenseFuseNet/blob/master/DenseFuseNet.pdf)
 *Yulun Wu*
@@ -13,3 +13,6 @@ To address these problems, in this paper, we proposed a general framework to est
 
 ***Keywords**: Autonomous driving, 3D semantic segmentation, lidar, point clouds, sensor fusion, spher-
 ical projection, noise analysis, convolutional neural networks*
+
+# Cite this
+Y. Wu, "DenseFuseNet: Improve 3D Semantic Segmentation in the Context of Autonomous Driving with Dense Correspondence," 2021 IEEE International Conference on Consumer Electronics and Computer Engineering (ICCECE), Guangzhou, China, 2021, pp. 259-270, doi: 10.1109/ICCECE51280.2021.9342077.
